@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>笔速标定采集 · 自由画</title>
+<style>
+:root{ --paper:#f7efdc; --hi:#fbf8f1; --ink:#23282c; --soft:#4a4438; --faint:#8a8272; --zhu:#b4482f; --lv:#2f6f61; --line:rgba(35,40,44,.14); }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--paper);color:var(--ink);padding:16px 20px 24px}
+h1{font-size:17px;letter-spacing:.08em;margin-bottom:2px}
+.sub{font-size:11.5px;color:var(--faint);margin-bottom:12px;line-height:1.7}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+input{font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--hi);width:96px}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--hi);color:var(--soft);font-size:12px;padding:6px 14px;border-radius:7px;letter-spacing:.06em}
+button:hover{border-color:var(--faint)}
+button.on{background:var(--ink);color:var(--hi);border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--soft);margin-bottom:10px}
+.stats b{font-size:15px;display:block;color:var(--ink);font-variant-numeric:tabular-nums}
+.tip{font-size:11px;color:var(--faint);line-height:1.8;margin-bottom:10px}
+.wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--hi);width:900px;max-width:100%}
+canvas{display:block;width:900px;height:600px;cursor:crosshair;touch-action:none;max-width:100%}
+#toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--zhu);color:#fff;font-size:12px;padding:8px 16px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none}
+#toast.show{opacity:1}
+.foot{font-size:10.5px;color:var(--faint);margin-top:10px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<h1>笔速标定采集 · 自由画</h1>
+<div class="sub">用途：为「绘画自习室」三档阈值取真实分布。画布固定 900×600 CSS 像素，请勿缩放窗口或改画布尺寸，否则 px/s 不可比。</div>
+
+<div class="bar">
+  <span style="font-size:12px;color:var(--soft)">被试编号</span>
+  <input id="pid" placeholder="S01" maxlength="12">
+  <span style="font-size:12px;color:var(--soft);margin-left:6px">时长</span>
+  <button class="chip on" data-min="20">20 分</button>
+  <button class="chip" data-min="10">10 分</button>
+  <button class="chip" data-min="5">5 分</button>
+  <button id="btnStart" style="margin-left:auto;background:var(--ink);color:var(--hi);border-color:var(--ink)">开始</button>
+  <button id="btnEnd" disabled>结束并导出</button>
+</div>
+
+<div class="stats">
+  <div>剩余<b id="left">20:00</b></div>
+  <div>当前笔速<b id="v">0</b></div>
+  <div>峰值<b id="peak">0</b></div>
+  <div>采样点<b id="n">0</b></div>
+  <div>停笔段<b id="gaps">0</b></div>
+  <div>落笔<b id="strokes">0</b></div>
+</div>
+
+<div class="tip">随便画什么，画满整段就对了；<strong>中途停手、看手机、发呆都可以</strong>——停手本身就是要记录的数据。20 分钟里至少包含 3 次「停 1 分钟以上」和 2 次「明显画慢下来」，这样断崖比例才有分布可算。</div>
+
+<div class="wrap"><canvas id="board" width="900" height="600"></canvas></div>
+
+<div class="foot">采样 4 Hz（每 250 ms 一个笔速点）· 笔速＝指针位移 / 时间，EMA 0.72/0.28，与绘画自习室原型同一套算法 · 停笔段＝相邻两次移动间隔 ≥ 1.2 s · 结束时自动导出 JSON，文件名含被试编号。</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const board = $("board"); const ctx = board.getContext("2d");
+  const LOGIC_W = 900, LOGIC_H = 600;
+  const SPEED_CAP = 3000;      // px/s 物理上限：900 px 画布上手最快也画不到 3000 px/s，超过就不是手写的
+
+  let drawing = false, lastPt = null, lastMoveAt = 0;
+  let curSpeed = 0, peak = 0, strokeCount = 0;
+  let samples = [];            // [t_ms, speed]
+  let gaps = [];               // {start,end,sec}
+  let gapOpen = null;
+  let t0 = 0, running = false, endAt = 0, lastSampleAt = 0;
+  let pid = "", durationMin = 20;
+  let colors = ["#23282c","#b4482f","#2f5d8a","#2f6f61","#b3853e"] , color = colors[0];
+
+  // 画布按 dpr 放大，逻辑坐标仍是 900×600，保证 px/s 可比
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  board.width = LOGIC_W * dpr; board.height = LOGIC_H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  board.style.width = LOGIC_W + "px"; board.style.height = LOGIC_H + "px";
+
+  function pos(e){
+    const r = board.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (LOGIC_W / r.width), y: (e.clientY - r.top) * (LOGIC_H / r.height) };
+  }
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  board.addEventListener("pointerdown", e => {
+    if (!running) { toast("先点「开始」"); return; }
+    e.preventDefault();
+    try { board.setPointerCapture(e.pointerId); } catch(err){}
+    // 停笔段收尾：移动恢复即闭合
+    if (gapOpen) { gapOpen.end = performance.now(); gapOpen.sec = +((gapOpen.end - gapOpen.start) / 1000).toFixed(2); gaps.push(gapOpen); gapOpen = null; $("gaps").textContent = gaps.length; }
+    drawing = true; lastPt = pos(e); lastMoveAt = performance.now();
+    strokeCount++; $("strokes").textContent = strokeCount;
+    color = colors[strokeCount % colors.length];
+    ctx.beginPath(); ctx.moveTo(lastPt.x, lastPt.y);
+  });
+
+  board.addEventListener("pointermove", e => {
+    if (!drawing) return;
+    const p = pos(e), now = performance.now();
+    const dt = (now - lastMoveAt) / 1000;
+    const dist = Math.hypot(p.x - lastPt.x, p.y - lastPt.y);
+    if (dist < 0.6) return;
+    if (dt > 0.001 && dt < 1) {
+      // 钳制：单帧 dt 可小到 1 ms（合成事件/掉帧回跳），dist/dt 会算出几万 px/s 的假峰值，
+      // 一旦进 EMA 就会把之后几十个采样点和 20 s 滚动峰值一起污染。
+      const inst = Math.min(dist / dt, SPEED_CAP);
+      curSpeed = curSpeed * 0.72 + inst * 0.28;
+      if (curSpeed > peak) { peak = curSpeed; $("peak").textContent = Math.round(peak); }
+    }
+    ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    lastPt = p; lastMoveAt = now;
+  });
+
+  function endStroke(){
+    if (!drawing) return;
+    drawing = false; ctx.beginPath();
+  }
+  board.addEventListener("pointerup", endStroke);
+  board.addEventListener("pointercancel", endStroke);
+  board.addEventListener("contextmenu", e => e.preventDefault());
+
+  function fmt(ms){
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+
+  function tick(){
+    if (!running) return;
+    const now = performance.now();
+    const left = endAt - now;
+    $("left").textContent = fmt(left);
+
+    // 停笔衰减（与原型一致：停手 0.18 s 后开始衰减）
+    if (now - lastMoveAt > 180) { curSpeed *= 0.86; if (curSpeed < 1) curSpeed = 0; }
+    $("v").textContent = Math.round(curSpeed);
+
+    // 4 Hz 采样
+    if (now - lastSampleAt >= 250) {
+      lastSampleAt = now;
+      samples.push([Math.round(now - t0), Math.round(curSpeed)]);
+      $("n").textContent = samples.length;
+    }
+
+    // 停笔段：≥1.2 s 且尚未闭合
+    if (!gapOpen && !drawing && lastMoveAt && (now - lastMoveAt) >= 1200) {
+      gapOpen = { start: lastMoveAt, end: null, sec: null };
+    }
+
+    if (left <= 0) { finish(true); return; }
+    requestAnimationFrame(tick);
+  }
+
+  function finish(auto){
+    running = false;
+    if (gapOpen) { gapOpen.end = performance.now(); gapOpen.sec = +((gapOpen.end - gapOpen.start) / 1000).toFixed(2); gaps.push(gapOpen); gapOpen = null; }
+    $("btnStart").disabled = false; $("btnEnd").disabled = true;
+
+    const dur = Math.round((performance.now() - t0) / 1000);
+    const payload = {
+      kind: "speed_calibration",
+      schema_version: 1,
+      participant_id: pd(),
+      exported_at: new Date().toISOString(),
+      canvas: { w: LOGIC_W, h: LOGIC_H, dpr },
+      duration_sec: dur,
+      sample_hz: 4,
+      speed_algo: "dist/dt, EMA 0.72/0.28, decay 0.86 after 180ms idle",
+      gap_rule: "movement gap >= 1.2s",
+      strokes: strokeCount,
+      peak_px_s: Math.round(peak),
+      samples: samples,
+      idle_gaps_sec: gaps.map(g => g.sec).filter(v => v != null),
+      notes: auto ? "计时到点自动导出" : "主试手动结束"
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 0)], { type: "application/json" });
+    const a = document.createElement("a");
+    const stamp = new Date(), p2 = v => String(v).padStart(2, "0");
+    a.href = URL.createObjectURL(blob);
+    a.download = `标定_${payload.participant_id || "未编号"}_${stamp.getFullYear()}${p2(stamp.getMonth()+1)}${p2(stamp.getDate())}_${p2(stamp.getHours())}${p2(stamp.getMinutes())}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(auto ? "到点，已导出 JSON" : "已导出 JSON");
+  }
+
+  function pd(){ return ($("pid").value || "").trim() || "未编号"; }
+
+  $("btnStart").addEventListener("click", () => {
+    if (!($("pid").value || "").trim()) { toast("先填被试编号，例如 S01"); return; }
+    t0 = performance.now(); endAt = t0 + durationMin * 60 * 1000;
+    samples = []; gaps = []; gapOpen = null; peak = 0; curSpeed = 0; strokeCount = 0;
+    lastMoveAt = t0; lastSampleAt = t0;
+    ctx.clearRect(0, 0, LOGIC_W, LOGIC_H);
+    $("btnStart").disabled = true; $("btnEnd").disabled = false;
+    $("n").textContent = "0"; $("gaps").textContent = "0"; $("strokes").textContent = "0"; $("peak").textContent = "0";
+    running = true; requestAnimationFrame(tick);
+    toast("开始，随便画");
+  });
+
+  $("btnEnd").addEventListener("click", () => finish(false));
+
+  document.querySelectorAll("[data-min]").forEach(b => {
+    b.addEventListener("click", () => {
+      if (running) return;
+      document.querySelectorAll("[data-min]").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      durationMin = +b.dataset.min;
+      $("left").textContent = fmt(durationMin * 60 * 1000);
+    });
+  });
+
+  $("left").textContent = "20:00";
+})();
+</script>
+</body>
+</html>

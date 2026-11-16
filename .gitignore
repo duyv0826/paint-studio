@@ -1,0 +1,23 @@
+# 打包产物（体积大，不入库）
+build/
+dist/
+打包/
+*.spec
+*.exe
+*.msi
+
+# 运行期产出
+导出/
+自检结果.txt
+__pycache__/
+*.py[cod]
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 个人实验数据（含被试记录，永不入库）
+*.session.json

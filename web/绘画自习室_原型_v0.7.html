@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>绘画自习室 · 一人一桌的自习室</title>
+<style>
+:root{
+  --paper:#f7efdc; --paper-hi:#fbf8f1; --paper-mid:#eee9dd; --paper-edge:#e0d7c4;
+  --ink:#23282c; --ink-soft:#4a4438; --ink-faint:#8a8272;
+  --zhu:#b4482f; --zhu-soft:#f8e9e3; --lv:#2f6f61; --lv-soft:#e8f1eb;
+  --jin:#b3853e; --line:rgba(35,40,44,.14);
+  --kai:"Kaiti SC","KaiTi","STKaiti","Noto Serif SC","SimSun",serif;
+  --sans:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans); color:var(--ink); background:var(--paper);
+  background-image:radial-gradient(rgba(35,40,44,.045) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
+button:disabled{opacity:.45; cursor:not-allowed}
+input{font-family:inherit}
+
+.top{
+  display:flex; align-items:center; gap:14px;
+  padding:12px 18px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, var(--paper-hi), var(--paper));
+}
+.seal{
+  width:38px; height:38px; border-radius:7px; background:var(--zhu); color:var(--paper-hi);
+  font-family:var(--kai); font-size:22px; display:flex; align-items:center; justify-content:center;
+  transform:rotate(-3deg); box-shadow:0 2px 0 rgba(180,72,47,.35); flex:none; user-select:none;
+}
+.title-wrap{flex:1; min-width:0}
+h1{font-family:var(--kai); font-size:21px; font-weight:700; letter-spacing:.06em; line-height:1.2}
+.sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px; letter-spacing:.03em}
+.top-actions{display:flex; gap:8px; flex:none}
+.pill{
+  padding:6px 13px; border-radius:999px; font-size:12px; letter-spacing:.05em;
+  border:1px solid var(--line); background:var(--paper-hi); color:var(--ink-soft);
+}
+.pill:hover{border-color:var(--ink-faint)}
+.pill.net{cursor:default; font-variant-numeric:tabular-nums}
+.pill.net[data-s="on"]{border-color:#2f6f61; color:#2f6f61}
+.pill.net[data-s="off"]{opacity:.55}
+
+.main{display:flex; height:calc(100% - 63px); min-height:0}
+
+.desk{
+  width:326px; flex:none; border-right:1px solid var(--line); padding:12px 16px 12px;
+  overflow-y:auto; background:linear-gradient(180deg, var(--paper-hi) 0%, var(--paper) 120px);
+}
+.sec-label{
+  font-family:var(--kai); font-size:13px; letter-spacing:.18em; color:var(--ink-faint);
+  display:flex; align-items:center; gap:8px; margin:2px 0 10px;
+}
+.sec-label::after{content:""; flex:1; height:1px; background:var(--line)}
+
+.timer-card{
+  background:var(--paper-hi); border:1px solid var(--line); border-radius:14px;
+  padding:16px 14px 14px; text-align:center; position:relative; overflow:hidden;
+}
+.timer-card::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(circle at 50% -30%, rgba(179,133,62,.13), transparent 60%);
+}
+.status{
+  display:inline-flex; align-items:center; gap:6px; font-size:11px; letter-spacing:.12em;
+  padding:3px 11px; border-radius:999px; background:var(--paper-mid); color:var(--ink-soft);
+  margin-bottom:8px; transition:all .25s;
+}
+.status .dot{width:7px; height:7px; border-radius:50%; background:var(--ink-faint)}
+.status[data-s="run"]{background:var(--lv-soft); color:var(--lv)} .status[data-s="run"] .dot{background:var(--lv)}
+.status[data-s="fish"]{background:var(--zhu-soft); color:var(--zhu)} .status[data-s="fish"] .dot{background:var(--zhu)}
+.status[data-s="pause"]{background:#f3ead6; color:var(--jin)} .status[data-s="pause"] .dot{background:var(--jin)}
+.status[data-s="done"]{background:var(--zhu); color:var(--paper-hi)} .status[data-s="done"] .dot{background:var(--paper-hi)}
+.status[data-s="break"]{background:#eeeae1; color:#6b6355} .status[data-s="break"] .dot{background:#6b6355}
+
+.clock{
+  font-family:var(--kai); font-size:58px; line-height:1; letter-spacing:.04em;
+  font-variant-numeric:tabular-nums; color:var(--ink);
+}
+.clock small{font-size:18px; letter-spacing:.15em; color:var(--ink-faint); margin-left:4px}
+.dur-chips{display:flex; gap:6px; justify-content:center; margin:12px 0 12px}
+.chip{
+  padding:5px 13px; border-radius:999px; font-size:12px; border:1px solid var(--line);
+  color:var(--ink-soft); background:transparent;
+}
+.chip.on{background:var(--ink); color:var(--paper-hi); border-color:var(--ink)}
+.btn-row{display:flex; gap:8px}
+.btn{
+  flex:1; padding:10px 0; border-radius:10px; font-size:13.5px; letter-spacing:.12em;
+  border:1px solid var(--ink); color:var(--ink); background:transparent; transition:.15s;
+}
+.btn:hover{background:rgba(35,40,44,.06)}
+.btn.primary{background:var(--ink); color:var(--paper-hi)}
+.btn.primary:hover{background:#3a4046}
+.btn.ghost{border-color:var(--line); color:var(--ink-soft)}
+
+.tomato-row{display:flex; gap:5px; justify-content:center; margin:12px 0 4px; min-height:18px; flex-wrap:wrap}
+.tomato{width:16px; height:16px}
+.stamp-flash{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(247,239,220,.82); opacity:0; pointer-events:none; transition:opacity .35s;
+}
+.stamp-flash.show{opacity:1}
+.stamp-flash span{
+  font-family:var(--kai); font-size:44px; color:var(--zhu); letter-spacing:.3em;
+  border:3px solid var(--zhu); padding:10px 22px 10px 28px; border-radius:6px; transform:rotate(-6deg);
+}
+
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px}
+.stat{
+  background:var(--paper-hi); border:1px solid var(--line); border-radius:11px; padding:10px 11px;
+}
+.stat .k{font-size:11px; color:var(--ink-faint); letter-spacing:.1em}
+.stat .v{font-family:var(--kai); font-size:23px; margin-top:3px; font-variant-numeric:tabular-nums}
+.stat .v em{font-style:normal; font-size:11px; color:var(--ink-faint); margin-left:3px; font-family:var(--sans)}
+
+.press-box{margin-top:16px}
+.press-card{
+  background:var(--zhu-soft); border:1px solid rgba(180,72,47,.28); border-radius:12px; padding:12px;
+}
+.press-card.plain{background:var(--paper-hi); border-color:var(--line)}
+.press-card p{font-size:11.5px; color:var(--ink-soft); line-height:1.7; margin-bottom:9px}
+.ctl-line{display:flex; align-items:center; justify-content:space-between; margin-top:9px; font-size:12px; color:var(--ink-soft)}
+.switch{
+  width:38px; height:21px; border-radius:999px; background:var(--paper-edge); position:relative;
+  transition:.2s; flex:none;
+}
+.switch::after{
+  content:""; position:absolute; top:2.5px; left:3px; width:16px; height:16px; border-radius:50%;
+  background:var(--paper-hi); transition:.2s; box-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+.switch.on{background:var(--lv)} .switch.on::after{left:19px}
+
+.lv-row{display:flex; gap:6px; margin-bottom:8px}
+.lv-row .chip{flex:1; padding:6px 0; text-align:center}
+.lv-thresh{font-size:10.5px; color:var(--ink-faint); line-height:1.65; letter-spacing:.02em; margin-bottom:2px}
+.lv-src{font-size:9.5px; color:var(--ink-faint); line-height:1.6; letter-spacing:.02em; margin-bottom:2px}
+
+.studio{flex:1; display:flex; flex-direction:column; min-width:0; min-height:0}
+.toolbar{
+  display:flex; align-items:center; gap:10px; padding:9px 14px; flex-wrap:wrap;
+  border-bottom:1px solid var(--line); background:var(--paper-hi);
+}
+.tool-cluster{display:flex; align-items:center; gap:5px}
+.tool-cluster-label{font-size:11px; color:var(--ink-faint); letter-spacing:.12em; margin-right:2px}
+.swatch{
+  width:22px; height:22px; border-radius:50%; border:2px solid transparent;
+  box-shadow:inset 0 0 0 1px rgba(35,40,44,.18); transition:.12s;
+}
+.swatch.on{border-color:var(--ink); transform:scale(1.12)}
+.swatch.erase{
+  background:var(--paper-hi); position:relative;
+  box-shadow:inset 0 0 0 1px rgba(35,40,44,.3);
+}
+.swatch.erase::after{
+  content:""; position:absolute; inset:5px; border-radius:50%;
+  background:linear-gradient(135deg, var(--paper-edge) 46%, var(--zhu) 46%, var(--zhu) 54%, var(--paper-edge) 54%);
+}
+.swatch.erase.on{border-color:var(--zhu)}
+.size-dot{
+  width:26px; height:26px; border-radius:8px; border:1px solid transparent;
+  display:flex; align-items:center; justify-content:center; background:transparent;
+}
+.size-dot i{display:block; border-radius:50%; background:var(--ink-soft)}
+.size-dot.on{border-color:var(--ink); background:var(--paper-mid)}
+.tool-btn{
+  padding:6px 12px; border-radius:8px; border:1px solid var(--line); font-size:12px;
+  color:var(--ink-soft); background:var(--paper); letter-spacing:.08em;
+}
+.tool-btn:hover{border-color:var(--ink-faint); color:var(--ink)}
+.tool-btn.armed{border-color:var(--zhu); color:var(--zhu); background:var(--zhu-soft)}
+.tool-btn:disabled{opacity:.4}
+
+/* ── 数据出口条 ─────────────────── */
+.datarow{
+  display:flex; align-items:center; gap:8px; padding:7px 14px; flex-wrap:wrap;
+  border-bottom:1px solid var(--line); background:var(--paper);
+}
+.dr-label{font-size:10.5px; color:var(--ink-faint); letter-spacing:.12em}
+.datarow input{
+  font-size:11.5px; padding:4px 7px; border:1px solid var(--line); border-radius:6px;
+  background:var(--paper-hi); color:var(--ink); letter-spacing:0;
+}
+.datarow input:focus{outline:none; border-color:var(--ink-faint)}
+.datarow .w-pid{width:86px}
+.datarow .w-short{width:54px}
+.dr-cond{font-size:11px; letter-spacing:.1em; color:var(--lv); border:1px solid rgba(47,111,97,.3); background:var(--lv-soft); border-radius:999px; padding:2px 9px}
+.dr-msg{font-size:10.5px; color:var(--ink-faint); letter-spacing:.02em; flex:1; min-width:120px}
+.dr-msg.bad{color:var(--zhu)}
+.dr-btn{
+  padding:6px 14px; border-radius:8px; background:var(--lv); color:var(--paper-hi);
+  font-size:12px; letter-spacing:.14em; flex:none;
+}
+.dr-btn:hover{background:#3a8272}
+
+/* ── 座位条（核心） ───────── */
+.room{
+  display:flex; align-items:center; gap:10px; padding:8px 14px;
+  border-bottom:1px solid var(--line); background:var(--paper-hi); overflow-x:auto; flex:none;
+}
+.room-tag{font-family:var(--kai); font-size:12px; letter-spacing:.1em; color:var(--ink-faint); flex:none; white-space:nowrap}
+.room-tag b{color:var(--ink); font-weight:600; letter-spacing:.12em}
+.seats{display:flex; gap:8px; flex:0 0 auto; align-items:stretch}
+.seat{
+  display:flex; align-items:center; gap:7px; padding:6px 8px; border-radius:11px;
+  border:1px solid var(--line); background:var(--paper); flex:none; transition:.2s;
+}
+.seat.mine{border-color:rgba(47,111,97,.45); background:var(--lv-soft)}
+.seat.fish{border-color:rgba(180,72,47,.5); background:var(--zhu-soft)}
+.seat.away{opacity:.72}
+.seat-av{
+  width:27px; height:27px; border-radius:50%; background:var(--paper-edge); color:var(--ink-soft);
+  font-family:var(--kai); font-size:12px; display:flex; align-items:center; justify-content:center;
+  flex:none; border:1px solid rgba(35,40,44,.12);
+}
+.seat.mine .seat-av{background:var(--lv); color:var(--paper-hi); border-color:transparent}
+.seat-body{min-width:0}
+.seat-name{font-size:11.5px; letter-spacing:.03em; white-space:nowrap; line-height:1.35}
+.seat-name b{font-family:var(--kai); font-weight:600; font-size:13px; letter-spacing:.06em}
+.seat-state{display:flex; align-items:center; gap:4px; font-size:10px; color:var(--ink-faint); white-space:nowrap; line-height:1.5}
+.seat-state i{width:5px; height:5px; border-radius:50%; background:var(--ink-faint); flex:none; font-style:normal}
+.seat-state.draw i{background:var(--lv)} .seat-state.draw{color:var(--lv)}
+.seat-state.fish i{background:var(--zhu)} .seat-state.fish{color:var(--zhu); font-weight:600}
+.seat-state.away i{background:var(--jin)} .seat-state.away{color:var(--jin)}
+.seat-btn{
+  padding:4px 8px; border-radius:7px; border:1px solid rgba(180,72,47,.4); color:var(--zhu);
+  font-size:10.5px; background:var(--paper-hi); white-space:nowrap; flex:none; letter-spacing:.06em;
+}
+.seat-btn:hover{background:var(--zhu); color:var(--paper-hi)}
+.seat-btn:disabled{opacity:.4}
+.seat-btn.self{
+  border-style:dashed; border-color:rgba(47,111,97,.45); color:var(--lv);
+  background:transparent; padding:3px 7px;
+}
+.seat-btn.self:hover{background:var(--lv); color:var(--paper-hi); border-style:solid}
+.seat-mine-tag{font-size:9.5px; color:var(--lv); letter-spacing:.1em; white-space:nowrap; flex:none; border:1px solid rgba(47,111,97,.3); border-radius:5px; padding:2px 5px}
+.seat-demo-tag{
+  font-size:9.5px; color:var(--ink-faint); letter-spacing:.06em; white-space:nowrap; flex:none;
+  border:1px dashed rgba(35,40,44,.22); border-radius:5px; padding:2px 5px;
+  opacity:0; transition:opacity .15s;
+}
+.seat:hover .seat-demo-tag, .seat:focus-within .seat-demo-tag{opacity:1}
+.room-switch{display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--ink-faint); flex:none; white-space:nowrap}
+.room-note{margin-left:auto; font-size:10px; color:var(--ink-faint); white-space:nowrap; flex:none; letter-spacing:.02em}
+.room-demo-badge{
+  font-size:9.5px; color:var(--zhu); letter-spacing:.1em; white-space:nowrap; flex:none;
+  border:1px dashed rgba(180,72,47,.45); border-radius:5px; padding:2px 6px; background:var(--zhu-soft);
+}
+@media (max-width: 1340px){ .room-note{display:none} }
+
+.canvas-wrap{
+  flex:1; position:relative; min-height:0; margin:12px 14px 14px; border-radius:14px;
+  border:1px solid var(--line); overflow:hidden;
+  background:var(--paper-hi);
+  box-shadow:0 1px 0 rgba(35,40,44,.05), inset 0 0 0 1px rgba(255,255,255,.55);
+  transition:box-shadow .3s;
+}
+.canvas-wrap.fishing{
+  box-shadow:0 0 0 2px var(--zhu), 0 0 26px rgba(180,72,47,.35);
+  animation:shake .5s ease-in-out 2;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}
+}
+#board{position:absolute; inset:0; width:100%; height:100%; touch-action:none; display:block; cursor:crosshair}
+.empty-hint{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:8px; pointer-events:none; transition:opacity .5s; color:var(--ink-faint);
+}
+.empty-hint .big{font-family:var(--kai); font-size:22px; letter-spacing:.3em; color:rgba(35,40,44,.32)}
+.empty-hint .small{font-size:11.5px; letter-spacing:.12em}
+
+.hud{
+  position:absolute; left:12px; right:12px; bottom:12px;
+  display:flex; align-items:center; gap:14px; padding:9px 14px;
+  background:rgba(251,248,241,.92); border:1px solid var(--line); border-radius:12px;
+  backdrop-filter:blur(6px); pointer-events:none;
+}
+.hud-speed{display:flex; align-items:baseline; gap:5px; min-width:104px}
+.hud-speed .num{font-family:var(--kai); font-size:30px; font-variant-numeric:tabular-nums; line-height:1}
+.hud-speed .unit{font-size:11px; color:var(--ink-faint)}
+.hud-speed .cap{font-size:10px; color:var(--ink-faint); letter-spacing:.15em; display:block; margin-bottom:2px}
+#spark{width:150px; height:36px; flex:none; opacity:.9}
+.hud-stats{display:flex; gap:14px; flex-wrap:wrap; margin-left:auto}
+.hs .k{font-size:10px; color:var(--ink-faint); letter-spacing:.12em}
+.hs .v{font-family:var(--kai); font-size:18px; font-variant-numeric:tabular-nums; line-height:1.15}
+.hs{white-space:nowrap; flex:none}
+
+#qLayer{position:absolute; inset:0; overflow:hidden; pointer-events:none}
+.qmark{
+  position:absolute; font-family:var(--kai); color:var(--zhu); font-weight:700;
+  animation:qfly 1.9s ease-out forwards; text-shadow:0 1px 0 rgba(255,255,255,.5);
+}
+.qmark small{font-family:var(--sans); font-size:10px; color:var(--zhu); opacity:.75; display:block; margin-top:-4px}
+@keyframes qfly{
+  0%{opacity:0; transform:translateY(14px) rotate(var(--r)) scale(.6)}
+  18%{opacity:1; transform:translateY(0) rotate(var(--r)) scale(1)}
+  100%{opacity:0; transform:translateY(-110px) rotate(var(--r)) scale(1.15)}
+}
+.toast{
+  position:absolute; top:14px; left:50%; transform:translateX(-50%) translateY(-8px);
+  background:var(--zhu); color:var(--paper-hi); font-size:12px; letter-spacing:.1em;
+  padding:8px 18px; border-radius:999px; opacity:0; transition:.3s; pointer-events:none;
+  white-space:nowrap; max-width:calc(100% - 28px); overflow:hidden; text-overflow:ellipsis;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+.pitch{
+  margin-top:12px; position:relative; padding:12px 14px 10px 16px;
+  background:var(--paper-hi); border:1px solid var(--line); border-radius:12px;
+  font-family:var(--kai); font-size:13.5px; line-height:1.9; color:var(--ink-soft);
+}
+.pitch-mark{position:absolute; top:2px; left:8px; font-size:30px; color:var(--zhu); opacity:.55; line-height:1}
+.pitch-src{margin-top:6px; font-family:var(--sans); font-size:10.5px; letter-spacing:.12em; color:var(--ink-faint)}
+.desk-foot{margin-top:7px; text-align:center; font-size:9.5px; letter-spacing:.04em; color:var(--ink-faint)}
+
+.overlay{
+  position:fixed; inset:0; background:rgba(35,40,44,.42); z-index:50;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; pointer-events:none; transition:opacity .25s;
+}
+.overlay.show{opacity:1; pointer-events:auto}
+.doc{
+  width:min(760px, 100%); max-height:86vh; overflow-y:auto;
+  background:var(--paper-hi); border-radius:16px; padding:28px 30px 26px;
+  border:1px solid var(--line); box-shadow:0 20px 60px rgba(35,40,44,.28);
+}
+.doc h2{font-family:var(--kai); font-size:22px; letter-spacing:.12em; margin-bottom:4px}
+.doc .meta{font-size:11.5px; color:var(--ink-faint); letter-spacing:.08em; margin-bottom:16px}
+.doc h3{
+  font-family:var(--kai); font-size:15px; letter-spacing:.14em; margin:18px 0 8px;
+  display:flex; align-items:center; gap:8px; color:var(--ink);
+}
+.doc h3::before{content:""; width:5px; height:15px; border-radius:2px; background:var(--zhu)}
+.doc p, .doc li{font-size:13px; line-height:1.95; color:var(--ink-soft)}
+.doc ol, .doc ul{padding-left:1.3em}
+.doc table{width:100%; border-collapse:collapse; margin:8px 0; font-size:12px; color:var(--ink-soft)}
+.doc th, .doc td{border:1px solid var(--line); padding:6px 9px; text-align:left; line-height:1.7}
+.doc th{background:var(--paper-mid); font-weight:600; letter-spacing:.06em}
+.doc .note{
+  margin-top:14px; padding:11px 14px; border-radius:10px; background:var(--zhu-soft);
+  border:1px solid rgba(180,72,47,.25); font-size:12px; line-height:1.85; color:var(--ink-soft);
+}
+.doc .quote{
+  margin:8px 0; padding:9px 12px; border-left:3px solid var(--zhu); background:var(--paper);
+  font-family:var(--kai); font-size:12.5px; line-height:1.85; color:var(--ink-soft);
+}
+.doc .status-strip{
+  display:block; padding:8px 12px; border-radius:9px; background:var(--paper-mid);
+  font-size:11px; line-height:1.7; letter-spacing:.03em; color:var(--ink-soft); margin-bottom:4px;
+}
+.doc .status-strip b{color:var(--zhu); font-weight:600}
+.doc .script-label{font-size:11.5px; color:var(--ink-faint); line-height:1.85; letter-spacing:.02em}
+.doc .script-box{
+  margin:8px 0 2px; padding:12px 15px; border-radius:10px; border:1px dashed rgba(35,40,44,.26);
+  background:var(--paper); font-family:var(--kai); font-size:13px; line-height:1.95; color:var(--ink-soft);
+}
+.doc .foot{margin-top:20px; display:flex; justify-content:flex-end}
+.doc-close{
+  padding:9px 26px; border-radius:10px; background:var(--ink); color:var(--paper-hi);
+  font-size:13px; letter-spacing:.18em;
+}
+
+@media (max-height: 800px){
+  .clock{font-size:46px}
+  .timer-card{padding:12px 12px 10px}
+  .dur-chips{margin:10px 0 8px}
+  .stat-grid{margin-top:10px}
+  .stat{padding:8px 10px}
+  .stat .v{font-size:20px}
+  .pitch{display:none}
+  .desk-foot{display:none}
+  .press-box{margin-top:12px}
+}
+@media (max-width: 920px){
+  body{overflow:auto}
+  .main{flex-direction:column; height:auto}
+  .desk{width:100%; border-right:none; border-bottom:1px solid var(--line)}
+  .canvas-wrap{height:58vh; min-height:340px}
+  .hud-stats{gap:10px}
+  #spark{width:100px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="seal">习</div>
+  <div class="title-wrap">
+    <h1>绘画自习室 · 一人一桌，各自画各自的</h1>
+    <div class="sub">交互设计概论（胡斌）课程原型 v0.7 · 免安装单文件 · 未上线 · 房间只同步状态与问号，不同步画</div>
+  </div>
+  <div class="top-actions">
+    <span class="pill net" id="netChip" title="联机状态">联机中…</span>
+    <button class="pill" id="btnSound">声音 开</button>
+    <button class="pill" id="btnDoc">说明 / 讲法</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="desk">
+    <div class="sec-label">自习桌 · 番茄钟</div>
+    <div class="timer-card">
+      <div class="status" id="statusPill" data-s="idle"><span class="dot"></span><span id="statusText">未开始</span></div>
+      <div class="clock"><span id="clockText">25:00</span></div>
+      <div class="dur-chips" id="durChips">
+        <button class="chip" data-min="15">15 分</button>
+        <button class="chip on" data-min="25">25 分</button>
+        <button class="chip" data-min="45">45 分</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnStart">开始自习</button>
+        <button class="btn ghost" id="btnReset">重置</button>
+      </div>
+      <div class="tomato-row" id="tomatoRow"></div>
+      <div class="stamp-flash" id="stampFlash"><span>本轮毕</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="k">今日番茄</div><div class="v" id="stPomo">0<em>轮</em></div></div>
+      <div class="stat"><div class="k">累计专注</div><div class="v" id="stFocus">0<em>分</em></div></div>
+      <div class="stat"><div class="k">落笔</div><div class="v" id="stStrokes">0<em>笔</em></div></div>
+      <div class="stat"><div class="k">撤回步数</div><div class="v" id="stUndo">0<em>次</em></div></div>
+    </div>
+
+    <div class="press-box">
+      <div class="sec-label">本轮条件 · 纪律</div>
+      <div class="press-card">
+        <div class="lv-row" id="lvChips">
+          <button class="chip" data-lv="gentle">温柔</button>
+          <button class="chip on" data-lv="standard">标准</button>
+          <button class="chip" data-lv="strict">严厉</button>
+        </div>
+        <div class="lv-thresh" id="lvThresh">—</div>
+        <div class="lv-src">档位数值为设计取值，非实验实测标定</div>
+        <div class="ctl-line">
+          <span>守护总开关（自习中生效）</span>
+          <div class="switch on" id="swFish"></div>
+        </div>
+        <div class="ctl-line">
+          <span>同房间伴 · 可发问号</span>
+          <div class="switch on" id="swPeers"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pitch">
+      <div class="pitch-mark">「</div>
+      一间自习室，每人一张自己的桌：系统先提醒你，同桌再发个问号给你。
+      <div class="pitch-src">— 绘画自习室 · 立项一句话</div>
+    </div>
+    <div class="desk-foot">交互设计概论（胡斌）· 课程原型 v0.7 · 2026-11-14</div>
+  </aside>
+
+  <section class="studio">
+    <div class="toolbar">
+      <div class="tool-cluster">
+        <span class="tool-cluster-label">颜料</span>
+        <div id="swatches" style="display:flex;gap:5px"></div>
+      </div>
+      <div class="tool-cluster">
+        <span class="tool-cluster-label">笔尖</span>
+        <button class="size-dot" data-size="2"><i style="width:5px;height:5px"></i></button>
+        <button class="size-dot on" data-size="5"><i style="width:9px;height:9px"></i></button>
+        <button class="size-dot" data-size="11"><i style="width:15px;height:15px"></i></button>
+      </div>
+      <div class="tool-cluster" style="margin-left:auto">
+        <button class="tool-btn" id="btnUndo" disabled>撤回</button>
+        <button class="tool-btn" id="btnClear">清空</button>
+        <button class="tool-btn" id="btnPng">导出 PNG</button>
+        <button class="tool-btn" id="btnSum">导出小结</button>
+      </div>
+    </div>
+
+    <div class="datarow">
+      <span class="dr-label">本轮编号</span>
+      <input id="mPid" class="w-pid" placeholder="P01" maxlength="12" autocomplete="off">
+      <input id="mRound" class="w-short" placeholder="R1" maxlength="6" autocomplete="off">
+      <input id="mTask" class="w-short" placeholder="T1" maxlength="6" autocomplete="off">
+      <span class="dr-cond" id="drCond">条件 标准</span>
+      <span class="dr-msg" id="metaErr">缺标签时导出会被拒绝</span>
+      <button class="dr-btn" id="btnJson">导出数据 JSON</button>
+    </div>
+
+    <div class="room">
+      <span class="room-tag">自习室 <b>#demo</b></span>
+      <span class="room-demo-badge" title="房间号是本机演示占位，不是真实房间；同桌为演示数据">演示房间</span>
+      <div class="seats" id="seats"></div>
+      <span class="room-note">同桌为演示数据（本机模拟）· 联机时替换为真实座位</span>
+    </div>
+
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="board"></canvas>
+      <div class="empty-hint" id="hint">
+        <div class="big">我 的 一 张 桌</div>
+        <div class="small">这张纸只有你看得见 · 笔速 落笔 撤回 每分钟落笔 都会被记录</div>
+      </div>
+      <div id="qLayer"></div>
+      <div class="toast" id="toast"></div>
+      <div class="hud">
+        <div class="hud-speed">
+          <div>
+            <span class="cap">当前笔速</span>
+            <span class="num" id="hudSpeed">0</span><span class="unit">px/s</span>
+          </div>
+        </div>
+        <canvas id="spark" width="300" height="72"></canvas>
+        <div class="hud-stats">
+          <div class="hs"><div class="k">峰值</div><div class="v" id="hudPeak">0</div></div>
+          <div class="hs"><div class="k">平均</div><div class="v" id="hudAvg">0</div></div>
+          <div class="hs"><div class="k">落笔</div><div class="v" id="hudStrokes">0</div></div>
+          <div class="hs"><div class="k">撤回</div><div class="v" id="hudUndo">0</div></div>
+          <div class="hs"><div class="k">每分钟落笔</div><div class="v" id="hudPerMin">0.0</div></div>
+          <div class="hs"><div class="k">提醒</div><div class="v" id="hudRemind">0</div></div>
+          <div class="hs"><div class="k">收到问号</div><div class="v" id="hudQ">0</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="docOverlay">
+  <div class="doc">
+    <h2>绘画自习室 · 原型说明（v0.7）</h2>
+    <div class="meta">交互设计概论（胡斌）课程原型 v0.7 · 2026-11-14 · 一房多座 · 各自一张私有桌</div>
+    <div class="status-strip"><b>状态</b>：课程原型，单文件本地运行；未上线，没有真实用户数据；统计只在这台机器上（内存 + localStorage）。</div>
+
+    <h3>这是什么（按录音原话重做的一版）</h3>
+    <p>一间自习室，<strong>每个人都画自己的东西，不在同一张纸上画</strong>。你自己那台默默记录笔速、落笔数、撤回步数、每分钟落笔；系统先提醒你，房间里的同桌再点你的座位发一个问号给你。画本身不共享，共享的只是「你现在在不在画」。</p>
+    <div class="quote">「它不是一个这样的页面，就是一个小窗悬浮在上面，它检测的是我（的）绘画软件。」<span style="opacity:.6">— 录音 17 / 1:35:37</span></div>
+    <div class="quote">「它只是一个平台，它不是在那个里面画的，是监测我自己的。」<span style="opacity:.6">— 录音 17 / 2:27:03</span></div>
+    <div class="quote">「一个自习桌里面，然后所有人都可以发问号……系统先提醒一下，然后大家都可以发问号去压力他。」<span style="opacity:.6">— 录音 17 / 2:26:21</span></div>
+
+    <h3>这一版改了什么（v0.5 → v0.7）</h3>
+    <table>
+      <tr><th></th><th>v0.5（错的）</th><th>v0.7（按原话）</th></tr>
+      <tr><td>画布</td><td>一张共享纸，多人同画</td><td>每人一张自己的桌，内容私有</td></tr>
+      <tr><td>房间</td><td>房间＝同一张画布</td><td>房间＝一排座位，只同步状态</td></tr>
+      <tr><td>施压</td><td>谁都能往你的纸上飘问号</td><td>系统先提醒 → 同桌点你的座位发问号</td></tr>
+      <tr><td>度量</td><td>混算所有人的笔画</td><td>只算你自己那台的笔速 / 落笔 / 撤回 / 每分钟</td></tr>
+    </table>
+
+    <h3>三档阈值（设计取值，非实测标定）</h3>
+    <p><strong>这三组数字不是实验结果。</strong>下表与代码里的 <code>LEVEL_PROFILES</code> 逐项对应，是作者设定的起始值；断崖门槛 300 px/s 与同伴补刀延迟 6 s 同样是设计取值。正式实验前要重新标定，标定完成之前，它们只能当演示参数看。</p>
+    <table>
+      <tr><th>档位</th><th>静默</th><th>失焦</th><th>笔速断崖</th><th>冷却</th></tr>
+      <tr><td>温柔</td><td>60 s</td><td>90 s</td><td>跌到近期峰值 28% 且持续 4 s</td><td>45 s</td></tr>
+      <tr><td>标准</td><td>20 s</td><td>45 s</td><td>跌到近期峰值 35% 且持续 3 s</td><td>30 s</td></tr>
+      <tr><td>严厉</td><td>10 s</td><td>20 s</td><td>跌到近期峰值 50% 且持续 2 s</td><td>15 s</td></tr>
+    </table>
+    <p>断崖只在「近期 20 秒峰值 ≥ 300 px/s 且仍在落笔」时判，停手归静默管。<strong>提醒一次后要重新落笔才会再提醒</strong>；人离开窗口期间静默与断崖都不判，交给失焦信号。</p>
+
+    <h3>三步演示</h3>
+    <ol>
+      <li>选档位 → 点「开始自习」，在右边你这张桌上画。</li>
+      <li>停笔超过静默阈值，画纸边框会红一下并飘问号——这是<strong>系统</strong>提醒。</li>
+      <li>大约 6 秒后，状态栏里正在画的同桌会给你发来一个问号——这是<strong>同伴</strong>压力。你也可以点别人座位上的「问号 ?」去压别人；单机没有同桌时，点自己座位上那个虚线「?」可以<strong>自己催自己一下</strong>，这类问号单独计数，不计入同伴压力。</li>
+    </ol>
+
+    <h3>数据出口怎么用</h3>
+    <ol>
+      <li>开测前：主试填 <strong>P01 / R1 / T1</strong>，选定本轮档位，并决定本轮是否开「同房间伴」（这就是 系统提醒 / 系统+同伴 两个条件的差别）。</li>
+      <li>画完先点「导出数据 JSON」，再关页面。缺任一标签按钮会拒绝导出并红字列出缺项。</li>
+      <li>文件名 <code>绘画自习室_P01_standard_with_peers_R1_T1.json</code>，直接归档。</li>
+      <li>关键字段：<code>room.pressure</code> 里每条问号都带 <code>after_reminder_ms</code>（系统提醒后多久被同伴补一刀）与 <code>reaction_ms</code>（收到问号后多久重新落笔）。</li>
+    </ol>
+
+    <h3>技术边界（先说清楚）</h3>
+    <ul>
+      <li><strong>不再共享画布</strong>：v0.5 那层共绘协议（stroke_start / canvas_snapshot）已整体删除。这张纸只有你看得见，房间只广播「座位状态」。</li>
+      <li>同桌状态在本机是<strong>模拟</strong>的（阿岩 / 小林 / 老周是三个虚构的演示座位，会自己画、自己停），用来演示「发问号」这条链路；联机可用时替换为真实座位，接口已按 seat 状态写好。</li>
+      <li>浏览器读不到网页之外的数位板轨迹，所以「监测你在 PS/Procreate 里画」仍需<strong>桌面常驻小窗</strong>（下一阶段），这一版监测的是本页这张桌。</li>
+      <li>「撤回步数」是本页的撤回，不是绘画软件的 Ctrl+Z。</li>
+      <li>失焦按「离开够久、回到页面时」提醒，离开时长记进 <code>away_ms</code>。</li>
+    </ul>
+
+    <div class="note">
+      数据说明：番茄数、落笔/撤回统计存在浏览器 localStorage，按日期记录；本会话的笔速、路径、提醒与问号记录只存在内存，<strong>关掉页面就没了</strong>——画完先导出 JSON。画作不会自动保存，画完请点「导出 PNG」。清空画布需点两次确认。
+    </div>
+
+    <h3>附：上台讲法（口播稿 · 不是产品描述）</h3>
+    <p class="script-label">下面这段是全页唯一一处宣传口径，只在开场或答辩时念。上面各部分只描述这台机器实际做了什么，两种口径不要混着用——需要「产品感」的时候念这段，需要「可信」的时候用上面的表。</p>
+    <div class="script-box">「这是一个给画画人的自习室。你跟三五个同学进同一间房，但<strong>每人一张自己的桌子，各画各的</strong>——画不给别人看。你这张桌会默默记下笔速、画了多少笔、撤回几次、每分钟多少笔。停笔摸着手机，系统先提醒你；六秒还没动，房间里正在画的人会点你的座位，给你发一个问号。我们不逼你专注，我们只是让『有人在旁边看着你画』这件事，变得有一点存在感。」</div>
+
+    <div class="foot"><button class="doc-close" id="btnDocClose">知道了</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ══════════ 工具 ══════════ */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fmtInt = n => String(Math.round(n));
+const nowISO = () => new Date().toISOString();
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const todayKey = () => {
+  const d = new Date();
+  return `pnt_studio_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+
+/* ══════════ 三档条件（单一真源） ══════════ */
+const LEVEL_PROFILES = {
+  gentle:  { key:"gentle",   label:"温柔", idleSec:60, blurSec:90, cliffRatio:0.28, cliffDwellSec:4, cooldownSec:45 },
+  standard:{ key:"standard", label:"标准", idleSec:20, blurSec:45, cliffRatio:0.35, cliffDwellSec:3, cooldownSec:30 },
+  strict:  { key:"strict",   label:"严厉", idleSec:10, blurSec:20, cliffRatio:0.50, cliffDwellSec:2, cooldownSec:15 }
+};
+let profile = LEVEL_PROFILES.standard;
+const condSwitches = [];
+const reminderLog = [];
+
+/* ══════════ 画室状态 ══════════ */
+const COLORS = ["#23282c","#b4482f","#2f5d8a","#2f6f61","#b3853e","#6b4a78","#3b7b8a","#7a4b32"];
+let color = COLORS[0], size = 5, erase = false;
+
+let strokes = [];
+let cur = null;
+let undoCount = 0;
+let strokeCount = 0;
+let pathLen = 0;
+let moveSec = 0;
+let peakSpeed = 0;
+let curSpeed = 0;
+const SPEED_CAP = 3000;   // px/s 物理上限：防止单帧 dt 极小导致 dist/dt 爆成几万，污染峰值与断崖判定
+let lastMoveT = 0;
+let lastPt = null;
+let lastStrokeAt = Date.now();
+let sparkBuf = new Array(75).fill(0);
+let speedHist = [];
+let lastSampleT = 0;
+let cliffSince = 0;
+let blurredSince = 0;
+let pendingReminder = null;
+let lastReminderAt = 0;
+let guardArmed = true;
+
+let pomodoroMin = 25;
+let running = false, paused = false;
+let remainMs = 25*60*1000;
+let timerEnd = 0;
+let breaking = false, breakEnd = 0, breakTotalMs = 0;
+let fishOn = true;
+let soundOn = true;
+
+let activeMs = 0;
+const pageStart = Date.now();
+let sessionStartISO = null;
+
+let stats = { pomo:0, focusSec:0, strokes:0, undos:0, drawSec:0, pathLen:0 };
+try { const raw = localStorage.getItem(todayKey()); if (raw) stats = Object.assign(stats, JSON.parse(raw)); } catch(e){}
+const save = () => { try { localStorage.setItem(todayKey(), JSON.stringify(stats)); } catch(e){} };
+
+/* ══════════ 座位与房间 ══════════ */
+const SEAT_KEY = "pnt_seat_id";
+const NICK_KEY = "pnt_nick";
+function mySeatId(){
+  try {
+    let v = localStorage.getItem(SEAT_KEY);
+    if (!v) { v = "seat" + Math.random().toString(36).slice(2,7); localStorage.setItem(SEAT_KEY, v); }
+    return v;
+  } catch(e){ return "seat" + Math.random().toString(36).slice(2,7); }
+}
+function myName(){
+  try {
+    let n = localStorage.getItem(NICK_KEY);
+    if (!n) { n = "同桌" + Math.random().toString(36).slice(2,6).toUpperCase(); localStorage.setItem(NICK_KEY, n); }
+    return n;
+  } catch(e){ return "同桌" + Math.random().toString(36).slice(2,6).toUpperCase(); }
+}
+const MY_ID = mySeatId();
+const MY_NAME = myName();
+
+let peersOn = true;
+const demoPeers = [
+  { id:"p1", name:"阿岩", av:"岩", state:"draw", idleSec:0, strokes:9, undos:1, pomo:1, qGet:0, demo:true },
+  { id:"p2", name:"小林", av:"林", state:"draw", idleSec:0, strokes:4, undos:0, pomo:0, qGet:0, demo:true },
+  { id:"p3", name:"老周", av:"周", state:"idle", idleSec:14, strokes:22, undos:3, pomo:2, qGet:0, demo:true }
+];
+const remoteSeats = new Map();
+let qSent = 0, qReceived = 0;
+let qSentSelf = 0, qReceivedSelf = 0;   // 自助问号单独计数，不混进同伴压力的统计口径
+const pressureLog = [];
+let pendingQ = null;
+
+function stLabel(code, idleSec){
+  if (code === "away") return "离开";
+  if (code === "fish") return "摸鱼 " + idleSec + "s";
+  if (code === "draw") return "在画";
+  if (code === "idle") return (idleSec > 0 ? "停 " + idleSec + "s" : "空闲");
+  return "空闲";
+}
+
+function mySeatState(){
+  if (blurredSince) return { code:"away", idleSec:0 };
+  if (pendingReminder) return { code:"fish", idleSec: Math.round((Date.now() - lastStrokeAt) / 1000) };
+  if (!running || paused) return { code:"idle", idleSec: Math.round((Date.now() - lastStrokeAt) / 1000) };
+  const idle = Math.round((Date.now() - lastStrokeAt) / 1000);
+  return { code: idle < 8 ? "draw" : "idle", idleSec: idle };
+}
+
+function seatHTML(p){
+  const code = p.mine ? p.stateInfo.code : p.state;
+  const idle = p.mine ? p.stateInfo.idleSec : p.idleSec;
+  const cls = p.mine ? "mine" : "";
+  const fishCls = code === "fish" ? "fish" : "";
+  const awayCls = code === "away" ? "away" : "";
+  const stateTxt = stLabel(code, idle);
+  const meta = "落笔 " + p.strokes + (p.undos ? " · 撤 " + p.undos : "");
+  const tip = p.mine
+    ? "这张纸只有你看得见"
+    : (p.demo ? `${p.name} · ${stateTxt} · ${meta}（演示数据 · 本机模拟）` : `${p.name} · ${stateTxt} · ${meta}`);
+  return `<div class="seat ${cls} ${fishCls} ${awayCls}" title="${esc(tip)}">
+    <div class="seat-av">${esc(p.av)}</div>
+    <div class="seat-body">
+      <div class="seat-name">${p.mine ? "我的桌" : "<b>" + esc(p.name) + "</b>"}</div>
+      <div class="seat-state ${code}"><i></i>${esc(stateTxt)}${
+        p.mine ? `<span style="margin-left:6px;opacity:.72">落笔 ${p.strokes}</span>` : ""
+      }</div>
+    </div>
+    ${p.mine
+      ? `<span class="seat-mine-tag">私有</span><button class="seat-btn self" data-seat="${esc(p.id)}" title="自助补刀：给自己发一个问号（单独计数，不计入同伴压力）">?</button>`
+      : `${p.demo ? '<span class="seat-demo-tag" title="演示数据，不是真实用户">演示</span>' : ''}<button class="seat-btn" data-seat="${esc(p.id)}" title="给 ${esc(p.name)} 发问号">?</button>`}
+  </div>`;
+}
+
+function renderRoom(){
+  const box = $("seats");
+  if (!box) return;
+  const mine = { id: MY_ID, name: MY_NAME, av: "我", mine: true, stateInfo: mySeatState(), strokes: strokeCount, undos: undoCount };
+  let html = seatHTML(mine);
+  if (peersOn) {
+    demoPeers.forEach(p => { html += seatHTML(p); });
+    remoteSeats.forEach(p => { html += seatHTML(p); });
+  }
+  box.innerHTML = html;
+  const tag = document.querySelector(".room-tag");
+  if (tag) {
+    const n = peersOn ? 1 + demoPeers.length + remoteSeats.size : 1;
+    tag.innerHTML = `自习室 <b>#demo</b> · ${n} 座`;
+  }
+}
+
+function sendQmark(seatId){
+  if (seatId === MY_ID || seatId === MY_NAME) return sendQmarkSelf();
+  const p = demoPeers.find(x => x.id === seatId) || remoteSeats.get(seatId);
+  if (!p) return;
+  qSent++;
+  roomSend({ type:"qmark", from: MY_NAME, from_id: MY_ID, to: seatId });
+  p.qGet = (p.qGet || 0) + 1;
+  if (demoPeers.indexOf(p) >= 0) {
+    p.state = "draw"; p.idleSec = 0; p.strokes += 1;
+    toast(`已给 ${p.name} 发问号，他被催回去画了`);
+  } else {
+    toast(`已给 ${p.name} 发问号`);
+  }
+  renderRoom(); syncStats();
+}
+
+function sendQmarkSelf(){
+  // 自助补刀：不经过 socket，直接走本地同一条链路，记录里带 self 标记
+  qSentSelf++;
+  receiveQ(MY_NAME, MY_ID, true);
+}
+
+function receiveQ(fromName, fromId, self){
+  qReceived++;
+  if (self) qReceivedSelf++;
+  sfx("msg_in");
+  const rec = {
+    at: nowISO(),
+    from: self ? "自己" : (fromName || "同桌"),
+    from_id: fromId || null,
+    self: !!self,
+    after_reminder_ms: pendingReminder ? (Date.now() - new Date(pendingReminder.at).getTime()) : null,
+    reaction_ms: null
+  };
+  pressureLog.push(rec);
+  pendingQ = rec;
+  spawnQ(4, rec.from);
+  armGlow();
+  toast(self ? "你催了自己一下" : `${rec.from} 发来一个问号`);
+  syncStats();
+}
+
+function stepRoom(){
+  if (!peersOn) { renderRoom(); return; }
+  demoPeers.forEach(p => {
+    if (p.state === "draw") {
+      if (Math.random() < 0.5) { p.strokes += 1; p.idleSec = 0; }
+      else {
+        p.idleSec += 1;
+        if (Math.random() < 0.28) p.state = "idle";
+      }
+    } else if (p.state === "idle") {
+      p.idleSec += 1;
+      if (p.idleSec > 24) p.state = "fish";
+      else if (Math.random() < 0.22) { p.state = "draw"; p.idleSec = 0; }
+    } else {
+      p.idleSec += 1;
+      if (p.idleSec > 34 && Math.random() < 0.35) { p.state = "draw"; p.idleSec = 0; p.strokes += 1; }
+    }
+  });
+  maybePeerPressure();
+  pruneRemote();
+  renderRoom();
+  roomPushSeat();
+}
+
+function maybePeerPressure(){
+  if (!peersOn || !pendingReminder || pendingReminder.peerAsked) return;
+  const age = Date.now() - new Date(pendingReminder.at).getTime();
+  if (age < 6000) return;
+  pendingReminder.peerAsked = true;
+  const from = demoPeers.find(p => p.state === "draw") || demoPeers[0];
+  receiveQ(from.name, from.id);
+}
+
+$("seats").addEventListener("click", e => {
+  const btn = e.target.closest(".seat-btn");
+  if (!btn) return;
+  sendQmark(btn.dataset.seat);
+});
+
+$("swPeers").addEventListener("click", () => {
+  peersOn = !peersOn;
+  $("swPeers").classList.toggle("on", peersOn);
+  toast(peersOn ? "同房间伴：开（可发问号）" : "同房间伴：关（本轮只有系统提醒）");
+  renderRoom(); syncStats();
+});
+
+/* ══════════ 档位切换 ══════════ */
+function setProfile(key, silent){
+  const next = LEVEL_PROFILES[key];
+  if (!next) return;
+  const from = profile.key;
+  if (!silent && from !== key) {
+    if (strokeCount > 0 || sessionStartISO) {
+      condSwitches.push({ at: nowISO(), from, to: key });
+      toast(`本轮已换档 ${LEVEL_PROFILES[from].label}→${next.label}，已记入条件变更`);
+    }
+  }
+  profile = next;
+  document.querySelectorAll("#lvChips .chip").forEach(c => c.classList.toggle("on", c.dataset.lv === key));
+  $("lvThresh").textContent =
+    `静默 ${profile.idleSec}s · 失焦 ${profile.blurSec}s · 断崖 ${Math.round(profile.cliffRatio*100)}%/${profile.cliffDwellSec}s · 冷却 ${profile.cooldownSec}s`;
+  const dc = $("drCond");
+  if (dc) dc.textContent = "条件 " + profile.label;
+  lastReminderAt = 0;
+  cliffSince = 0;
+  syncStats();
+}
+$("lvChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  setProfile(chip.dataset.lv, false);
+});
+
+/* ══════════ 颜料 / 笔尖 ══════════ */
+const swWrap = $("swatches");
+COLORS.forEach((c,i) => {
+  const b = document.createElement("button");
+  b.className = "swatch" + (i===0 ? " on" : "");
+  b.style.background = c;
+  b.title = "颜料 " + (i+1);
+  b.addEventListener("click", () => {
+    erase = false;
+    document.querySelectorAll(".swatch").forEach(s => s.classList.remove("on"));
+    b.classList.add("on");
+    color = c;
+  });
+  swWrap.appendChild(b);
+});
+const eraseBtn = document.createElement("button");
+eraseBtn.className = "swatch erase";
+eraseBtn.title = "橡皮";
+eraseBtn.addEventListener("click", () => {
+  erase = true;
+  document.querySelectorAll(".swatch").forEach(s => s.classList.remove("on"));
+  eraseBtn.classList.add("on");
+});
+swWrap.appendChild(eraseBtn);
+
+document.querySelectorAll(".size-dot").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".size-dot").forEach(b => b.classList.remove("on"));
+    btn.classList.add("on");
+    size = +btn.dataset.size;
+  });
+});
+
+/* ══════════ 我的桌（画布） ══════════ */
+const board = $("board");
+const ctx = board.getContext("2d");
+let W = 0, H = 0, dpr = 1;
+
+function fitCanvas(){
+  if (!ctx) return;
+  const r = board.parentElement.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  board.width = Math.round(W * dpr);
+  board.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  redraw();
+}
+
+function drawStroke(c, s){
+  if (!c || !s || !s.pts || !s.pts.length) return;
+  c.save();
+  if (s.erase) c.globalCompositeOperation = "destination-out";
+  c.strokeStyle = s.color;
+  c.lineWidth = s.size;
+  c.lineCap = "round";
+  c.lineJoin = "round";
+  c.beginPath();
+  c.moveTo(s.pts[0].x, s.pts[0].y);
+  for (let i = 1; i < s.pts.length; i++) c.lineTo(s.pts[i].x, s.pts[i].y);
+  if (s.pts.length === 1) c.lineTo(s.pts[0].x + 0.01, s.pts[0].y);
+  c.stroke();
+  c.restore();
+}
+
+function redraw(){
+  if (!ctx) return;
+  ctx.clearRect(0, 0, W, H);
+  for (const s of strokes) drawStroke(ctx, s);
+  if (cur) drawStroke(ctx, cur);
+}
+
+function pos(e){
+  const r = board.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function newStrokeId(){
+  return "s" + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+}
+
+board.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  try { board.setPointerCapture(e.pointerId); } catch(err){}
+  clearGlow();
+  guardArmed = true;
+  lastStrokeAt = Date.now();
+  if (pendingQ && pendingQ.reaction_ms == null) {
+    pendingQ.reaction_ms = Date.now() - new Date(pendingQ.at).getTime();
+    pendingQ = null;
+  }
+  const p = pos(e);
+  cur = { id: newStrokeId(), pts:[p], color: erase ? "#000" : color, size: erase ? size*2.2 : size, erase: erase, len:0 };
+  strokeCount++;
+  stats.strokes++;
+  if (window.StudioSfx) window.StudioSfx.playThrottled("stroke_soft", 90);
+  lastPt = p;
+  lastMoveT = performance.now();
+  $("hint").style.opacity = "0";
+  resumeFromReminder();
+  syncStats(); save();
+});
+
+board.addEventListener("pointermove", e => {
+  if (!cur) return;
+  const p = pos(e);
+  const now = performance.now();
+  const dt = (now - lastMoveT) / 1000;
+  const dx = p.x - lastPt.x, dy = p.y - lastPt.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 0.6) return;
+  if (dt > 0.001 && dt < 1) {
+    const inst = Math.min(dist / dt, SPEED_CAP);
+    curSpeed = curSpeed * 0.72 + inst * 0.28;
+    peakSpeed = Math.max(peakSpeed, curSpeed);
+    moveSec += dt;
+    pathLen += dist;
+  }
+  cur.len += dist;
+  cur.pts.push(p);
+  lastPt = p; lastMoveT = now;
+  lastStrokeAt = Date.now();
+  redraw();
+});
+
+function endStroke(){
+  if (!cur) return;
+  if (cur.pts.length) strokes.push(cur);
+  cur = null;
+  $("btnUndo").disabled = strokes.length === 0;
+  syncStats(); save();
+}
+board.addEventListener("pointerup", endStroke);
+board.addEventListener("pointercancel", endStroke);
+board.addEventListener("contextmenu", e => e.preventDefault());
+
+/* ══════════ 撤回 / 清空 / 导出 PNG ══════════ */
+$("btnUndo").addEventListener("click", () => {
+  if (!strokes.length) return;
+  strokes.pop();
+  undoCount++;
+  stats.undos++;
+  $("btnUndo").disabled = strokes.length === 0;
+  redraw(); syncStats(); save();
+});
+
+let clearArmed = false, clearTimer = null;
+$("btnClear").addEventListener("click", () => {
+  const btn = $("btnClear");
+  if (!clearArmed) {
+    clearArmed = true;
+    btn.classList.add("armed");
+    btn.textContent = "再点一次清空";
+    clearTimer = setTimeout(() => {
+      clearArmed = false; btn.classList.remove("armed"); btn.textContent = "清空";
+    }, 2600);
+    return;
+  }
+  clearTimeout(clearTimer);
+  clearArmed = false; btn.classList.remove("armed"); btn.textContent = "清空";
+  strokes = []; cur = null;
+  strokeCount = 0; undoCount = 0; pathLen = 0; moveSec = 0; peakSpeed = 0;
+  speedHist = []; sparkBuf = new Array(75).fill(0);
+  $("btnUndo").disabled = true;
+  redraw(); syncStats(); save();
+  toast("这张桌已清空（统计从零开始）");
+});
+
+$("btnPng").addEventListener("click", () => {
+  const out = document.createElement("canvas");
+  out.width = board.width; out.height = board.height;
+  const oc = out.getContext("2d");
+  oc.fillStyle = "#fbf8f1";
+  oc.fillRect(0, 0, out.width, out.height);
+  oc.drawImage(board, 0, 0);
+  const pid = ($("mPid").value || "").trim();
+  if (pid) {
+    oc.font = `${Math.round(12 * dpr)}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    oc.fillStyle = "rgba(35,40,44,.28)";
+    oc.fillText(`${pid} · ${profile.label} · v0.7`, 14 * dpr, out.height - 12 * dpr);
+  }
+  out.toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `绘画自习室_${pid || "未编号"}_${Date.now()}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast("PNG 已导出");
+  }, "image/png");
+});
+
+/* ══════════ 派生指标 ══════════ */
+function activeSec(){
+  return activeMs > 3000 ? activeMs / 1000 : (Date.now() - pageStart) / 1000;
+}
+function activeMin(){
+  return Math.max(activeSec() / 60, 0.05);
+}
+function avgSpeed(){
+  return moveSec > 0.2 ? Math.round(pathLen / moveSec) : 0;
+}
+function strokesPerMin(){
+  return +(strokeCount / activeMin()).toFixed(1);
+}
+function sessionSps(){
+  return +(strokeCount / Math.max(activeSec(), 1)).toFixed(2);
+}
+
+/* ══════════ 数据出口 ══════════ */
+const META_LIMITS = [
+  "只记录你自己这张桌（本页画布）；画布内容不上传、不共享，房间只广播座位状态。",
+  "浏览器沙箱无法读取 Photoshop / Procreate 等外部软件的笔触与 Ctrl+Z；桌面悬浮小窗为下一阶段。",
+  "SPS 与笔速由指针事件推算，不是数位板原生压感 / 倾角 / 笔尖数据。",
+  "失焦信号按「离开时长达到阈值、回到页面时提醒」计，离开期间不弹窗。",
+  "本版同桌座位为本机模拟（demo_peers=true），名字为虚构演示数据；真实联机未在本机验证，pressure 记录需以现场实际为准。",
+  "三档阈值（静默 60/20/10 s、失焦 90/45/20 s、断崖 28%/35%/50%、持续 4/3/2 s、冷却 45/30/15 s）、断崖门槛 300 px/s、同伴补刀延迟 6 s 均为设计取值，非实验实测标定。",
+  "本会话的笔速、路径长度、提醒与问号记录只存在内存，关页面即失；请先导出 JSON。"
+];
+
+function metaFields(){
+  return {
+    participant_id: ($("mPid").value || "").trim(),
+    round: ($("mRound").value || "").trim(),
+    task: ($("mTask").value || "").trim()
+  };
+}
+function missingMeta(){
+  const m = metaFields(), miss = [];
+  if (!m.participant_id) miss.push("participant_id");
+  if (!m.round) miss.push("round");
+  if (!m.task) miss.push("task");
+  return miss;
+}
+function renderMetaState(){
+  const miss = missingMeta();
+  const el = $("metaErr");
+  if (miss.length) {
+    el.classList.add("bad");
+    el.textContent = "缺 " + miss.join(" / ") + "，导出会被拒绝";
+  } else {
+    el.classList.remove("bad");
+    el.textContent = "标签齐：P " + metaFields().participant_id + " · 条件 " + profile.label + " · " + (peersOn ? "有同桌" : "无同桌") + " · R " + metaFields().round + " · T " + metaFields().task;
+  }
+}
+["mPid","mRound","mTask"].forEach(id => $(id).addEventListener("input", renderMetaState));
+
+$("btnJson").addEventListener("click", () => {
+  const miss = missingMeta();
+  if (miss.length) {
+    renderMetaState();
+    toast("缺标签，已拒绝导出：" + miss.join(" / "));
+    return;
+  }
+  const m = metaFields();
+  const warnings = [];
+  if (condSwitches.length) warnings.push(`本轮中途换档 ${condSwitches.length} 次，条件不唯一`);
+  if (strokeCount === 0) warnings.push("本轮没有落笔记录");
+  if (!running && sessionStartISO === null) warnings.push("导出时尚未开始过番茄钟");
+
+  const payload = {
+    schema_version: 3,
+    app: "绘画自习室 · 单文件原型 v0.7",
+    exported_at: nowISO(),
+    session: {
+      participant_id: m.participant_id,
+      condition: profile.key,
+      condition_label: profile.label,
+      social_condition: peersOn ? "with_peers" : "system_only",
+      round: m.round,
+      task: m.task,
+      started_at: sessionStartISO,
+      ended_at: nowISO(),
+      active_sec: +activeSec().toFixed(1),
+      page_sec: +((Date.now() - pageStart) / 1000).toFixed(1),
+      planned_min: pomodoroMin,
+      condition_switches: condSwitches.slice()
+    },
+    pomodoro: {
+      rounds_completed: stats.pomo,
+      focus_sec: stats.focusSec,
+      today_strokes: stats.strokes,
+      today_undos: stats.undos
+    },
+    my_desk: {
+      private: true,
+      stroke_count: strokeCount,
+      undo_count: undoCount,
+      strokes_on_desk: strokes.length,
+      path_len_px: Math.round(pathLen),
+      draw_sec: +moveSec.toFixed(1),
+      avg_speed_px_s: avgSpeed(),
+      peak_speed_px_s: Math.round(peakSpeed),
+      session_sps: sessionSps(),
+      strokes_per_min: strokesPerMin()
+    },
+    room: {
+      code: "demo",
+      demo_room: true,
+      demo_room_note: "房间号为本机演示占位，不是真实房间号",
+      my_seat_id: MY_ID,
+      nickname: MY_NAME,
+      peers_enabled: peersOn,
+      demo_peers: true,
+      seats_visible: peersOn ? 1 + demoPeers.length + remoteSeats.size : 1,
+      peer_states: (peersOn ? demoPeers.map(p => ({
+        name: p.name, state: p.state, idle_sec: p.idleSec, strokes: p.strokes, undos: p.undos, q_received: p.qGet || 0
+      })) : []),
+      qmark_sent: qSent,
+      qmark_received: qReceived,
+      qmark_sent_self: qSentSelf,
+      qmark_received_self: qReceivedSelf,
+      pressure: pressureLog.slice()
+    },
+    guard: {
+      level: profile.key,
+      enabled: fishOn,
+      thresholds: {
+        idle_sec: profile.idleSec,
+        blur_sec: profile.blurSec,
+        cliff_ratio: profile.cliffRatio,
+        cliff_dwell_sec: profile.cliffDwellSec,
+        cooldown_sec: profile.cooldownSec
+      },
+      reminder_count: reminderLog.length,
+      reminders: reminderLog.slice()
+    },
+    data_valid: miss.length === 0 && strokeCount > 0,
+    missing_fields: miss,
+    warnings: warnings,
+    limits: META_LIMITS.slice()
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `绘画自习室_${m.participant_id}_${profile.key}_${peersOn ? "with_peers" : "system_only"}_${m.round}_${m.task}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(payload.data_valid ? "数据 JSON 已导出" : "已导出，但 data_valid=false（见 warnings）");
+  renderMetaState();
+});
+
+$("btnSum").addEventListener("click", () => {
+  const d = new Date();
+  const txt = [
+    "绘画自习室 · 今日小结",
+    `日期 ${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,
+    `本轮条件 ${profile.label} · 社交条件 ${peersOn ? "有同桌" : "无同桌（仅系统提醒）"}`,
+    "—— 自习桌 ——",
+    `完成番茄 ${stats.pomo} 轮 · 累计专注 ${Math.round(stats.focusSec/60)} 分钟`,
+    "—— 我的桌（本次会话）——",
+    `落笔 ${strokeCount} 笔 · 撤回 ${undoCount} 次 · 系统提醒 ${reminderLog.length} 次 · 收到问号 ${qReceived} 个${qReceivedSelf ? `（其中自助 ${qReceivedSelf} 个）` : ""}`,
+    `平均笔速 ${avgSpeed()} px/s · 峰值 ${Math.round(peakSpeed)} px/s · 每分钟落笔 ${strokesPerMin()} 笔`,
+    "—— 今日累计 ——",
+    `落笔 ${stats.strokes} 笔 · 撤回 ${stats.undos} 次`,
+    "（原始数据请用「导出数据 JSON」；本 txt 仅供人看）"
+  ].join("\n");
+  const blob = new Blob([txt], { type:"text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `绘画自习室_小结_${Date.now()}.txt`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast("小结已导出");
+});
+
+/* ══════════ 番茄钟 ══════════ */
+const clockText = $("clockText");
+const statusPill = $("statusPill");
+const statusText = $("statusText");
+
+function renderTomatoes(){
+  const row = $("tomatoRow");
+  row.innerHTML = "";
+  const n = Math.min(stats.pomo, 12);
+  for (let i = 0; i < n; i++) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("viewBox","0 0 16 16");
+    svg.setAttribute("class","tomato");
+    svg.innerHTML = `<circle cx="8" cy="9.5" r="5.6" fill="#b4482f"/><path d="M8 4.2 C7 2 5.6 1.8 4.8 2.4 C6 2.8 6.8 3.6 7.2 4.6 Z" fill="#2f6f61"/><path d="M8 4.2 C9 2 10.4 1.8 11.2 2.4 C10 2.8 9.2 3.6 8.8 4.6 Z" fill="#2f6f61"/>`;
+    row.appendChild(svg);
+  }
+  if (stats.pomo > 12) {
+    const s = document.createElement("span");
+    s.style.cssText = "font-size:11px;color:var(--ink-faint);align-self:center;margin-left:4px";
+    s.textContent = `+${stats.pomo - 12}`;
+    row.appendChild(s);
+  }
+}
+
+function setStatus(mode, text){
+  statusPill.dataset.s = mode;
+  statusText.textContent = text;
+}
+
+function renderClock(){
+  const t = Math.max(0, Math.ceil(remainMs / 1000));
+  const m = String(Math.floor(t / 60)).padStart(2, "0");
+  const s = String(t % 60).padStart(2, "0");
+  clockText.textContent = `${m}:${s}`;
+}
+
+/* 休息阶段：每 4 轮 15 分钟，其余 5 分钟。休息期间不计专注时长，也不跑久坐提醒。 */
+function startBreak(){
+  const brkMin = (stats.pomo % 4 === 0) ? 15 : 5;
+  breaking = true;
+  breakTotalMs = brkMin * 60 * 1000;
+  breakEnd = Date.now() + breakTotalMs;
+  remainMs = breakTotalMs;
+  renderClock();
+  setStatus("break", `本轮完成 · 休息 ${brkMin} 分`);
+  $("btnStart").textContent = "跳过休息";
+  setTimeout(() => { if (breaking) sfx("break_start"); }, 1600);
+}
+
+function endBreak(){
+  if (!breaking) return;
+  breaking = false;
+  remainMs = pomodoroMin * 60 * 1000;
+  renderClock();
+  setStatus("idle", "休息结束");
+  $("btnStart").textContent = "开始下一轮";
+}
+
+/* 休息结束的收尾音：先起身（木椅/布料），0.9 秒后补一记回桌提示 */
+function endBreakCue(){
+  sfx("stretch");
+  setTimeout(() => { if (!running && !breaking) sfx("break_end"); }, 900);
+}
+
+function startPomodoro(){
+  running = true; paused = false;
+  if (remainMs <= 0) remainMs = pomodoroMin * 60 * 1000;
+  timerEnd = Date.now() + remainMs;
+  setStatus("run", "自习中");
+  $("btnStart").textContent = "暂停";
+  lastStrokeAt = Date.now();
+  guardArmed = true; lastReminderAt = 0; cliffSince = 0;
+  if (!sessionStartISO) sessionStartISO = nowISO();
+  clearGlow();
+  renderRoom();
+  sfx("pomo_start");
+  if (window.StudioSfx && soundOn) window.StudioSfx.ambience(true);
+}
+
+let lastTickAt = performance.now();
+function tick(){
+  const t = performance.now();
+  const dt = Math.min((t - lastTickAt) / 1000, 1.2);
+  lastTickAt = t;
+
+  if (breaking) {
+    const br = breakEnd - Date.now();
+    remainMs = br > 0 ? br : 0;
+    renderClock();
+    if (br <= 0) { endBreak(); endBreakCue(); }
+  }
+
+  if (running && !paused) {
+    activeMs += dt * 1000;
+    remainMs = timerEnd - Date.now();
+    if (remainMs <= 0) {
+      remainMs = 0;
+      running = false; paused = false;
+      stats.pomo++;
+      stats.focusSec += pomodoroMin * 60;
+      save();
+      renderTomatoes(); syncStats();
+      flashStamp();
+      sfx("pomo_end");
+      startBreak();
+    }
+    renderClock();
+    checkGuard();
+  }
+
+  const idleFor = (t - lastMoveT) / 1000;
+  if (idleFor > 0.18) {
+    curSpeed *= 0.86;
+    if (curSpeed < 1) curSpeed = 0;
+  }
+  if (t - lastSampleT > 250) {
+    lastSampleT = t;
+    speedHist.push({ t, v: curSpeed });
+    while (speedHist.length && t - speedHist[0].t > 20000) speedHist.shift();
+  }
+  drawSpark();
+  const sp = $("hudSpeed");
+  if (sp) sp.textContent = fmtInt(curSpeed);
+  if (running && !paused) { syncHud(); }
+  requestAnimationFrame(tick);
+}
+
+$("btnStart").addEventListener("click", () => {
+  if (breaking) { endBreak(); startPomodoro(); return; }
+  if (!running) {
+    startPomodoro();
+  } else if (!paused) {
+    paused = true;
+    remainMs = timerEnd - Date.now();
+    setStatus("pause", "已暂停");
+    $("btnStart").textContent = "继续";
+    sfx("ui_toggle");
+    if (window.StudioSfx) window.StudioSfx.ambience(false);
+  } else {
+    paused = false;
+    timerEnd = Date.now() + remainMs;
+    setStatus("run", "自习中");
+    $("btnStart").textContent = "暂停";
+    lastStrokeAt = Date.now();
+    sfx("ui_toggle");
+    if (window.StudioSfx && soundOn) window.StudioSfx.ambience(true);
+  }
+});
+
+$("btnReset").addEventListener("click", () => {
+  running = false; paused = false;
+  breaking = false;
+  remainMs = pomodoroMin * 60 * 1000;
+  renderClock();
+  setStatus("idle", "未开始");
+  $("btnStart").textContent = "开始自习";
+  clearGlow();
+  lastReminderAt = 0; cliffSince = 0; pendingReminder = null; guardArmed = true;
+  sfx("ui_tap");
+  if (window.StudioSfx) window.StudioSfx.ambience(false);
+});
+
+$("durChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip || running || breaking) return;
+  document.querySelectorAll("#durChips .chip").forEach(c => c.classList.remove("on"));
+  chip.classList.add("on");
+  pomodoroMin = +chip.dataset.min;
+  sfx("ui_toggle");
+  remainMs = pomodoroMin * 60 * 1000;
+  renderClock();
+});
+
+function flashStamp(){
+  const el = $("stampFlash");
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 1600);
+}
+
+/* ══════════ 专注守护 ══════════ */
+let glowOn = false;
+function armGlow(){
+  glowOn = true;
+  $("wrap").classList.add("fishing");
+}
+function clearGlow(){
+  if (!glowOn) { $("wrap").classList.remove("fishing"); return; }
+  glowOn = false;
+  $("wrap").classList.remove("fishing");
+}
+
+function fireReminder(signal, text, extra){
+  if (!fishOn || !guardArmed) return;
+  const now = Date.now();
+  if (now - lastReminderAt < profile.cooldownSec * 1000) return;
+  lastReminderAt = now;
+  guardArmed = false;
+
+  const rec = { signal: signal, level: profile.key, at: nowISO(), delay_ms: null, peer_q_after_ms: null };
+  if (extra && extra.away_ms != null) rec.away_ms = Math.round(extra.away_ms);
+  reminderLog.push(rec);
+  pendingReminder = rec;
+
+  armGlow();
+  sfx("remind_sit");
+  toast(`${profile.label}档 · ${text}`);
+  spawnQ(signal === "blur" ? 3 : 4, "系统");
+  cliffSince = 0;
+  syncStats();
+}
+
+function resumeFromReminder(){
+  if (!pendingReminder) { clearGlow(); return; }
+  pendingReminder.delay_ms = Math.max(0, Date.now() - new Date(pendingReminder.at).getTime());
+  pendingReminder = null;
+  clearGlow();
+  syncStats();
+}
+
+function checkGuard(){
+  if (!fishOn || !running || paused) return;
+  if (blurredSince) return;
+
+  if (Date.now() - lastStrokeAt > profile.idleSec * 1000) {
+    fireReminder("idle", `停笔 ${profile.idleSec}s · 画笔寂寞了…要不要添两笔？`);
+    return;
+  }
+
+  const recentPeak = speedHist.reduce((mx, s) => Math.max(mx, s.v), 0);
+  const drawing = Date.now() - lastStrokeAt < 3000;
+  if (drawing && recentPeak >= 300 && curSpeed > 20 && curSpeed < recentPeak * profile.cliffRatio) {
+    if (!cliffSince) cliffSince = Date.now();
+    if (Date.now() - cliffSince > profile.cliffDwellSec * 1000) {
+      fireReminder("cliff", `笔速从 ${Math.round(recentPeak)} 掉到 ${Math.round(curSpeed)} px/s`);
+    }
+  } else if (curSpeed > 20) {
+    cliffSince = 0;
+  }
+}
+
+function onAwayBlur(){
+  if (!running || paused) return;
+  blurredSince = Date.now();
+  renderRoom();
+}
+function onAwayReturn(){
+  if (!blurredSince) return;
+  const away = Date.now() - blurredSince;
+  blurredSince = 0;
+  renderRoom();
+  if (away >= profile.blurSec * 1000) {
+    fireReminder("blur", `你刚离开 ${Math.round(away/1000)}s · 纸还空着`, { away_ms: away });
+  }
+}
+window.addEventListener("blur", onAwayBlur);
+window.addEventListener("focus", onAwayReturn);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) onAwayBlur(); else onAwayReturn();
+});
+
+/* ══════════ 问号 ══════════ */
+function spawnQ(n, from){
+  const layer = $("qLayer");
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const q = document.createElement("div");
+      q.className = "qmark";
+      q.innerHTML = "？" + (from ? `<small>${esc(from)}</small>` : "");
+      const r = (Math.random() * 34 - 17).toFixed(1) + "deg";
+      q.style.setProperty("--r", r);
+      q.style.left = (8 + Math.random() * 80) + "%";
+      q.style.top = (12 + Math.random() * 62) + "%";
+      q.style.fontSize = (28 + Math.random() * 34) + "px";
+      layer.appendChild(q);
+      setTimeout(() => q.remove(), 2100);
+    }, i * 160);
+  }
+}
+
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+/* ══════════ StepAudio 音效（外部 sfx/*.wav，缺文件自动降级回 ding） ══════════ */
+/* 绘画自习室 · 音效接入模块
+ * 双路径播放：优先 WebAudio（decodeAudioData，低延迟、可精确控音量）；
+ * 在 file:// 双击打开时 fetch 会被浏览器拦截，自动退到 HTMLAudioElement，
+ * 两种场景都能出声；文件彻底缺失时静默降级，不影响任何交互。
+ */
+(function (global) {
+  var FILES = {
+    ui_tap: "sfx/ui_tap.wav",
+    ui_toggle: "sfx/ui_toggle.wav",
+    pomo_start: "sfx/pomo_start.wav",
+    pomo_end: "sfx/pomo_end.wav",
+    break_start: "sfx/break_start.wav",
+    break_end: "sfx/break_end.wav",
+    stretch: "sfx/stretch.wav",
+    remind_sit: "sfx/remind_sit.wav",
+    msg_in: "sfx/msg_in.wav",
+    join_room: "sfx/join_room.wav",
+    disconnect: "sfx/disconnect.wav",
+    stroke_soft: "sfx/stroke_soft.wav",
+    ambience_studio: "sfx/ambience_studio.wav"
+  };
+
+  var VOLUME = {
+    ui_tap: 0.35,
+    ui_toggle: 0.4,
+    pomo_start: 0.55,
+    pomo_end: 0.6,
+    break_start: 0.5,
+    break_end: 0.5,
+    stretch: 0.4,
+    remind_sit: 0.5,
+    msg_in: 0.45,
+    join_room: 0.5,
+    disconnect: 0.45,
+    stroke_soft: 0.25,
+    ambience_studio: 0.18
+  };
+
+  var buffers = {};
+  var els = {};
+  var ctx = null;
+  var enabled = true;
+  var ambienceNode = null;
+
+  function getCtx() {
+    if (!ctx) {
+      var AC = global.AudioContext || global.webkitAudioContext;
+      if (!AC) return null;
+      try { ctx = new AC(); } catch (e) { ctx = null; }
+    }
+    if (ctx && ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function getEl(name) {
+    if (!els[name]) {
+      var a = new global.Audio(FILES[name]);
+      a.preload = "auto";
+      els[name] = a;
+    }
+    return els[name];
+  }
+
+  function load(name) {
+    var c = getCtx();
+    if (!c || !global.fetch) return Promise.resolve();
+    return global.fetch(FILES[name])
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.arrayBuffer();
+      })
+      .then(function (ab) {
+        return new Promise(function (res, rej) {
+          c.decodeAudioData(ab, function (buf) { buffers[name] = buf; res(); }, rej);
+        });
+      })
+      .catch(function () { /* file:// 或缺失：留给 HTMLAudio 兜底 */ });
+  }
+
+  function preload() {
+    return Promise.all(Object.keys(FILES).map(load));
+  }
+
+  function volumeOf(name, opts) {
+    return (opts && opts.volume != null) ? opts.volume : (VOLUME[name] || 0.5);
+  }
+
+  function play(name, opts) {
+    if (!enabled) return;
+    var vol = volumeOf(name, opts);
+    var c = getCtx();
+
+    if (c && buffers[name]) {
+      var src = c.createBufferSource();
+      var gain = c.createGain();
+      src.buffer = buffers[name];
+      gain.gain.value = vol;
+      src.connect(gain); gain.connect(c.destination);
+      src.start(0);
+      return;
+    }
+
+    // 兜底：HTMLAudioElement（file:// 场景可用）
+    var el = getEl(name);
+    try {
+      el.volume = vol;
+      el.currentTime = 0;
+      var p = el.play();
+      if (p && p.catch) p.catch(function () { /* 首次交互前被策略拦截，忽略 */ });
+    } catch (e) {}
+  }
+
+  // 连续落笔别叠加成噪音：同一事件 80ms 内只响一次
+  var lastPlay = {};
+  function playThrottled(name, ms) {
+    var now = Date.now();
+    if (lastPlay[name] && now - lastPlay[name] < (ms || 80)) return;
+    lastPlay[name] = now;
+    play(name);
+  }
+
+  function ambience(on) {
+    if (on) {
+      if (ambienceNode || !enabled) return;
+      var c = getCtx();
+      if (c && buffers.ambience_studio) {
+        var src = c.createBufferSource();
+        var gain = c.createGain();
+        src.buffer = buffers.ambience_studio;
+        src.loop = true;
+        gain.gain.value = VOLUME.ambience_studio;
+        src.connect(gain); gain.connect(c.destination);
+        src.start(0);
+        ambienceNode = { kind: "wa", src: src };
+        return;
+      }
+      var el = getEl("ambience_studio");
+      try {
+        el.loop = true;
+        el.volume = VOLUME.ambience_studio;
+        var p = el.play();
+        if (p && p.catch) p.catch(function () {});
+        ambienceNode = { kind: "el", el: el };
+      } catch (e) {}
+    } else if (ambienceNode) {
+      try {
+        if (ambienceNode.kind === "wa") ambienceNode.src.stop(0);
+        else { ambienceNode.el.pause(); ambienceNode.el.currentTime = 0; }
+      } catch (e) {}
+      ambienceNode = null;
+    }
+  }
+
+  function setEnabled(v) {
+    enabled = !!v;
+    if (!enabled) ambience(false);
+  }
+
+  global.StudioSfx = {
+    preload: preload,
+    play: play,
+    playThrottled: playThrottled,
+    ambience: ambience,
+    setEnabled: setEnabled,
+    files: FILES
+  };
+})(window);
+
+
+function sfx(name, opts){
+  if (!soundOn) return;
+  if (window.StudioSfx && window.StudioSfx.play) { window.StudioSfx.play(name, opts); return; }
+  ding();
+}
+
+/* ══════════ 音效（原程序化双音，作为降级保留） ══════════ */
+function ding(){
+  if (!soundOn) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ac = new AC();
+    [660, 990].forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      o.connect(g); g.connect(ac.destination);
+      const t = ac.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.start(t); o.stop(t + 0.55);
+    });
+    setTimeout(() => ac.close(), 1200);
+  } catch(e){}
+}
+$("btnSound").addEventListener("click", () => {
+  // 关声音那一下要在仍启用时先响，否则 sfx() 被 soundOn=false 短路，静音时没有任何确认音
+  if (soundOn) sfx("ui_toggle");
+  soundOn = !soundOn;
+  $("btnSound").textContent = soundOn ? "声音 开" : "声音 关";
+  if (window.StudioSfx) {
+    window.StudioSfx.setEnabled(soundOn);
+    if (!soundOn) window.StudioSfx.ambience(false);
+  }
+  if (soundOn) sfx("ui_toggle");
+});
+
+/* ══════════ 统计 ══════════ */
+function syncHud(){
+  const el = $("hudPerMin");
+  if (el) el.textContent = strokesPerMin().toFixed(1);
+}
+function syncStats(){
+  const avg = avgSpeed();
+  const perMin = strokesPerMin();
+  $("stPomo").innerHTML = `${stats.pomo}<em>轮</em>`;
+  $("stFocus").innerHTML = `${Math.round(stats.focusSec / 60)}<em>分</em>`;
+  $("stStrokes").innerHTML = `${stats.strokes}<em>笔</em>`;
+  $("stUndo").innerHTML = `${stats.undos}<em>次</em>`;
+  const pk = $("hudPeak"), av = $("hudAvg"), st = $("hudStrokes"), un = $("hudUndo"), pm = $("hudPerMin"), rd = $("hudRemind"), hq = $("hudQ");
+  if (pk) pk.textContent = fmtInt(peakSpeed);
+  if (av) av.textContent = avg;
+  if (st) st.textContent = strokeCount;
+  if (un) un.textContent = undoCount;
+  if (pm) pm.textContent = perMin.toFixed(1);
+  if (rd) rd.textContent = reminderLog.length;
+  if (hq) hq.textContent = qReceivedSelf ? `${qReceived}（含自助 ${qReceivedSelf}）` : qReceived;
+}
+
+const spark = $("spark");
+const sctx = spark ? spark.getContext("2d") : null;
+function drawSpark(){
+  if (!sctx) return;
+  sparkBuf.push(curSpeed);
+  if (sparkBuf.length > 75) sparkBuf.shift();
+  const w = spark.width, h = spark.height;
+  sctx.clearRect(0, 0, w, h);
+  const max = Math.max(400, ...sparkBuf);
+  sctx.beginPath();
+  sparkBuf.forEach((v, i) => {
+    const x = (i / (sparkBuf.length - 1)) * w;
+    const y = h - (v / max) * (h - 8) - 4;
+    i === 0 ? sctx.moveTo(x, y) : sctx.lineTo(x, y);
+  });
+  sctx.strokeStyle = "#2f6f61";
+  sctx.lineWidth = 2.5;
+  sctx.stroke();
+  sctx.lineTo(w, h); sctx.lineTo(0, h); sctx.closePath();
+  sctx.fillStyle = "rgba(47,111,97,.12)";
+  sctx.fill();
+}
+
+/* ══════════ 说明 ══════════ */
+$("btnDoc").addEventListener("click", () => $("docOverlay").classList.add("show"));
+$("btnDocClose").addEventListener("click", () => $("docOverlay").classList.remove("show"));
+$("docOverlay").addEventListener("click", e => {
+  if (e.target === $("docOverlay")) $("docOverlay").classList.remove("show");
+});
+
+/* ══════════ 房间联机（只同步座位状态，不同步笔迹） ══════════ */
+const ROOM_HOST = "co-paint-studio.app.workbuddy.host";
+const ROOM_CODE = "LSHJ25SVWO";
+const ROOM_ID = "room_demo_paint";
+let roomWs = null, roomTries = 0, roomUser = null;
+let lastSeatPush = 0;
+
+function roomChip(s, text){
+  const el = $("netChip");
+  if (!el) return;
+  if (s === "off" && el.dataset.s !== "off" && window.StudioSfx) window.StudioSfx.playThrottled("disconnect", 3000);
+  el.dataset.s = s;
+  el.textContent = text;
+}
+function roomSend(obj){
+  if (roomWs && roomWs.readyState === 1) {
+    try { roomWs.send(JSON.stringify(obj)); } catch(e){}
+  }
+}
+function roomPushSeat(){
+  if (!roomWs || roomWs.readyState !== 1) return;
+  const now = Date.now();
+  if (now - lastSeatPush < 1800) return;
+  lastSeatPush = now;
+  const st = mySeatState();
+  roomSend({ type:"seat", seat:{ id: MY_ID, name: MY_NAME, state: st.code, idle_sec: st.idleSec, strokes: strokeCount, undos: undoCount, pomo: stats.pomo } });
+}
+function pruneRemote(){
+  const now = Date.now();
+  remoteSeats.forEach((v, k) => { if (now - v.at > 9000 || !peersOn) remoteSeats.delete(k); });
+}
+function roomOnMessage(ev){
+  let msg;
+  try { msg = JSON.parse(ev.data); } catch(e){ return; }
+  if (msg.type === "room_state") {
+    const n = msg.online_count ?? (msg.peers ? msg.peers.length : 1);
+    roomChip("on", "联机 · " + n + " 人");
+    return;
+  }
+  if (msg.type === "seat" && msg.seat && msg.seat.id !== MY_ID) {
+    const s = msg.seat;
+    remoteSeats.set(s.id, {
+      id: s.id, name: s.name || "同桌", av: (s.name || "同").slice(0,1),
+      state: s.state || "idle", idleSec: s.idle_sec | 0,
+      strokes: s.strokes | 0, undos: s.undos | 0, pomo: s.pomo | 0, qGet: 0, at: Date.now()
+    });
+    renderRoom();
+    return;
+  }
+  if (msg.type === "qmark") {
+    const aim = msg.to === MY_ID || msg.to === MY_NAME;
+    if (!aim) return;
+    receiveQ(msg.from, msg.from_id);
+  }
+}
+
+function roomOpen(){
+  const q = new URLSearchParams({
+    user_id: roomUser.id,
+    display_name: MY_NAME,
+    sharecode: ROOM_CODE
+  });
+  const ws = new WebSocket("wss://" + ROOM_HOST + "/ws/rooms/" + ROOM_ID + "?" + q.toString());
+  roomWs = ws;
+  ws.onopen = () => { roomTries = 0; roomChip("on", "联机 · 已进房"); sfx("join_room"); };
+  ws.onmessage = roomOnMessage;
+  ws.onclose = () => {
+    if (roomWs === ws) roomWs = null;
+    roomChip("off", "单机（未联网）");
+    roomSchedule();
+  };
+  ws.onerror = () => { try { ws.close(); } catch(e){} };
+}
+function roomSchedule(){
+  if (roomTries >= 5) { roomChip("off", "单机 · 座位本机模拟"); return; }
+  roomTries++;
+  setTimeout(roomConnect, 2500 * roomTries);
+}
+async function roomConnect(){
+  roomChip("", "联机中…");
+  try {
+    const r = await fetch("https://" + ROOM_HOST + "/api/session?sharecode=" + ROOM_CODE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: MY_NAME })
+    });
+    if (!r.ok) throw new Error("session " + r.status);
+    const j = await r.json();
+    roomUser = j.user;
+    roomOpen();
+  } catch(e) {
+    roomChip("off", "单机 · 座位本机模拟");
+    roomSchedule();
+  }
+}
+
+/* ══════════ 启动 ══════════ */
+window.addEventListener("resize", fitCanvas);
+fitCanvas();
+renderClock();
+renderTomatoes();
+setProfile("standard", true);
+renderMetaState();
+syncStats();
+renderRoom();
+requestAnimationFrame(tick);
+setInterval(stepRoom, 1000);
+if (typeof WebSocket !== "undefined" && typeof fetch !== "undefined") roomConnect();
+setTimeout(() => { if (!roomWs) roomChip("off", "单机 · 座位本机模拟"); }, 6000);
+/* 音效预加载（首次交互后 AudioContext 才会解锁） */
+if (window.StudioSfx) { window.StudioSfx.preload(); }
+</script>
+</body>
+</html>
