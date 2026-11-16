@@ -4,6 +4,9 @@
 
 两种形态，同一套口径：**单文件 HTML**（双击即开，含音效）和 **Windows 桌面悬浮小窗**（Python 标准库，置顶无边框，浮在你的绘画软件上方）。
 
+**在线 demo**：<https://duyv0826.github.io/paint-studio/>（浏览器直接打开，音效已内嵌）
+**Windows 免安装版**：[Releases v0.9.1](https://github.com/duyv0826/paint-studio/releases/tag/v0.9.1)（38 MB，不需要装 Python）
+
 ![绘画自习室桌面小窗](screenshots/v09_自习桌.png)
 
 ---
